@@ -13,5 +13,6 @@ namespace Parcial3_CarmonaSantiago.DAL
         public DbSet<Service> Services { get; set; }
         public DbSet<Vehicle> Vehicles { get; set; }
         public DbSet<VehicleDetail> VehicleDetails { get; set; }
+
     }
 }

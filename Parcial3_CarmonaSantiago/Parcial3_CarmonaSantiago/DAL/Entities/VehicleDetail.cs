@@ -12,5 +12,8 @@ namespace Parcial3_CarmonaSantiago.DAL.Entities
 
         [Display(Name = "Vehiculo")]
         public Vehicle Vehicle { get; set; }
+
+        [Display(Name = "Usuario")]
+        public User User { get; set; }
     }
 }
