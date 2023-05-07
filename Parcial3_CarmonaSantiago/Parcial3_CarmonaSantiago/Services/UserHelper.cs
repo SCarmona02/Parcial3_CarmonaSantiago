@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Parcial3_CarmonaSantiago.DAL;
 using Parcial3_CarmonaSantiago.DAL.Entities;
 using Parcial3_CarmonaSantiago.Helpers;
+using Parcial3_CarmonaSantiago.Models;
 
 namespace Parcial3_CarmonaSantiago.Services
 {
@@ -49,6 +50,11 @@ namespace Parcial3_CarmonaSantiago.Services
         public async Task<bool> IsUserInRoleAsync(User user, string roleName)
         {
             return await _userManager.IsInRoleAsync(user, roleName);
+        }
+
+        public async Task<SignInResult> LoginAsync(LoginViewModel loginViewModel)
+        {
+            return await _signInManager.PasswordSignInAsync(loginViewModel.Username, loginViewModel.Password, loginViewModel.RememberMe, false);
         }
 
         public async Task LogOutAsync()

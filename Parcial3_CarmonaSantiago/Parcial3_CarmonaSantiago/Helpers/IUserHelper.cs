@@ -18,7 +18,7 @@ namespace Parcial3_CarmonaSantiago.Helpers
 
         Task<bool> IsUserInRoleAsync(User user, string roleName);
 
-        //Task<SignInResult> LoginAsync(LoginViewModel loginViewModel);
+        Task<SignInResult> LoginAsync(LoginViewModel loginViewModel);
 
         Task LogOutAsync();
     }
