@@ -163,5 +163,11 @@ namespace Parcial3_CarmonaSantiago.Controllers
             }
             return View(vehicleDetail);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ServiceState()
+        {
+            return View(await _context.VehicleDetails.Include(vehicleDetails => vehicleDetails.Vehicle).ThenInclude(vehicle => vehicle.Service).ToListAsync());
+        }
     }
 }
