@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Parcial3_CarmonaSantiago.DAL;
 using Parcial3_CarmonaSantiago.DAL.Entities;
 using Parcial3_CarmonaSantiago.Helpers;
+using Parcial3_CarmonaSantiago.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +31,7 @@ builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
 
 builder.Services.AddTransient<SeederDb>();
 
-builder.Services.AddScoped<IUserHelper>();
+builder.Services.AddScoped<IUserHelper, UserHelper>();
 
 var app = builder.Build();
 
