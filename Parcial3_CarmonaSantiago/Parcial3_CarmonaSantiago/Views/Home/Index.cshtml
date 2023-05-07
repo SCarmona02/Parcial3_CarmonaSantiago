@@ -3,6 +3,25 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <h1 class="display-4" style="margin-top: 50px;">Bienvenido a Washing Cars</h1>
+    <br />
+    @if (!User.Identity.IsAuthenticated)
+    {
+        <h2 style="margin-top: 50px;">Inicia Sesión para adquirir nuestros servicios</h2>
+    }
+    @if (User.Identity.IsAuthenticated && User.IsInRole("Client"))
+    {
+        <div style="display:inline-flex; margin-top: 50px;">
+            <div style="padding-right: 40px;">
+                <a class="btn btn-outline-info" asp-area="" asp-controller="Services" asp-action="Index">Servicios para su vehiculo</a>
+            </div>
+            <a class="btn btn-outline-info" asp-area="" asp-controller="Home" asp-action="Privacy">Estado de su servicio</a>
+        </div>
+    }
+    @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+    {
+        <div style="display:inline-flex; margin-top: 50px;">
+            <a class="btn btn-outline-info" asp-area="" asp-controller="Services" asp-action="ProcessService">Servicios en proceso</a>
+        </div>
+    }
 </div>

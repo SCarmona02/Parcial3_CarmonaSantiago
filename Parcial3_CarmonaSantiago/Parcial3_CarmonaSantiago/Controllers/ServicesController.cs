@@ -1,97 +1,145 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Parcial3_CarmonaSantiago.DAL;
 using Parcial3_CarmonaSantiago.DAL.Entities;
+using Parcial3_CarmonaSantiago.Helpers;
+using Parcial3_CarmonaSantiago.Models;
+using System.Diagnostics.Metrics;
 
 namespace Parcial3_CarmonaSantiago.Controllers
 {
     public class ServicesController : Controller
     {
+        private readonly IUserHelper _userHelper;
         private readonly DatabaseContext _context;
+        private readonly IDropDownListsHelper _dropDownListsHelper;
 
-        public ServicesController(DatabaseContext context)
+
+        public ServicesController(DatabaseContext context, IDropDownListsHelper dropDownListsHelper, IUserHelper userHelper)
         {
             _context = context;
+            _dropDownListsHelper = dropDownListsHelper;
+            _userHelper = userHelper;
+        }
+
+        private async Task<Service> GetServiceById(Guid? serviceId)
+        {
+            Service service = await _context.Services
+                .FirstOrDefaultAsync(service => service.Id == serviceId);
+            return service;
+        }
+        private async Task<Vehicle> GetVehicleById(Guid? vehicleId)
+        {
+            Vehicle vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(vehicle => vehicle.Id == vehicleId);
+            return vehicle;
+        }
+        private async Task<User> GetUserByName(string userName)
+        {
+            User user = await _context.Users
+                .FirstOrDefaultAsync(users => users.Email == userName);
+            return user;
+        }
+
+        private async Task<VehicleDetail> GetVehicleDetailById(Guid? vehicleDetailId)
+        {
+            VehicleDetail vehicleDetail = await _context.VehicleDetails.Include(vehicleDetail => vehicleDetail.Vehicle).ThenInclude(vehicle => vehicle.Service).FirstOrDefaultAsync(vehicleDetail => vehicleDetail.Id == vehicleDetailId);
+            return vehicleDetail;
         }
 
         // GET: Services
+        [Authorize(Roles = "Client")]
         public async Task<IActionResult> Index()
         {
-              return _context.Services != null ? 
-                          View(await _context.Services.ToListAsync()) :
-                          Problem("Entity set 'DatabaseContext.Services'  is null.");
+            return _context.Services != null ?
+                        View(await _context.Services.ToListAsync()) :
+                        Problem("Entity set 'DatabaseContext.Services'  is null.");
         }
 
-        // GET: Services/Details/5
-        public async Task<IActionResult> Details(Guid? id)
+        [HttpGet]
+        [Authorize(Roles = "Client")]
+        public async Task<IActionResult> AddVehicleService()
         {
-            if (id == null || _context.Services == null)
+            AddVehicleServiceViewModel addVehicleServiceViewModel = new()
             {
-                return NotFound();
-            }
+                Id = Guid.Empty,
+                Services = await _dropDownListsHelper.GetDDLServices(),
+            };
 
-            var service = await _context.Services
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (service == null)
-            {
-                return NotFound();
-            }
-
-            return View(service);
+            return View(addVehicleServiceViewModel);
         }
 
-        // GET: Services/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: Services/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Price,Id")] Service service)
+        [Authorize(Roles = "Client")]
+        public async Task<IActionResult> AddVehicleService(AddVehicleServiceViewModel addVehicleServiceViewModel)
         {
             if (ModelState.IsValid)
             {
-                service.Id = Guid.NewGuid();
-                _context.Add(service);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    Vehicle vehicle = new Vehicle()
+                    {
+                        NumberPlate = addVehicleServiceViewModel.NumberPlate,
+                        Owner = addVehicleServiceViewModel.Owner,
+                        Service = await GetServiceById(addVehicleServiceViewModel.ServiceId)
+                    };
+
+                    _context.Add(vehicle);
+
+                    VehicleDetail vehicleDetail = new VehicleDetail()
+                    {
+                        CreationDate = DateTime.Now,
+                        DeliveryDate = null,
+                        Vehicle = vehicle,
+                        User = await GetUserByName(User.Identity.Name)
+                    };
+
+                    _context.Add(vehicleDetail);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateException dbUpdateException)
+                {
+                    ModelState.AddModelError(string.Empty, dbUpdateException.InnerException.Message);
+                }
+                catch (Exception exception)
+                {
+                    ModelState.AddModelError(string.Empty, exception.Message);
+                }
             }
-            return View(service);
+            return View(addVehicleServiceViewModel);
         }
 
-        // GET: Services/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
+        [HttpGet]
+        public async Task<IActionResult> ProcessService()
         {
-            if (id == null || _context.Services == null)
-            {
-                return NotFound();
-            }
-
-            var service = await _context.Services.FindAsync(id);
-            if (service == null)
-            {
-                return NotFound();
-            }
-            return View(service);
+            return View(await _context.VehicleDetails.Include(vehicleDetails => vehicleDetails.Vehicle).ThenInclude(vehicle => vehicle.Service).ToListAsync());
         }
 
-        // POST: Services/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [HttpGet]
+        public async Task<IActionResult> EditProcessService(Guid? vehicleDetailId)
+        {
+            Console.WriteLine(vehicleDetailId);
+            if (vehicleDetailId == null || _context.VehicleDetails == null)
+            {
+                return NotFound();
+            }
+
+            var vehicleDetail = await GetVehicleDetailById(vehicleDetailId);
+            if (vehicleDetail == null)
+            {
+                return NotFound();
+            }
+            return View(vehicleDetail);
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Name,Price,Id")] Service service)
+        public async Task<IActionResult> EditProcessService(Guid vehicleDetailId, VehicleDetail vehicleDetail)
         {
-            if (id != service.Id)
+            if (vehicleDetailId != vehicleDetail.Id)
             {
                 return NotFound();
             }
@@ -100,65 +148,20 @@ namespace Parcial3_CarmonaSantiago.Controllers
             {
                 try
                 {
-                    _context.Update(service);
-                    await _context.SaveChangesAsync();
+                _context.Update(vehicleDetail);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(ProcessService));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (DbUpdateException dbUpdateException)
                 {
-                    if (!ServiceExists(service.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    ModelState.AddModelError(string.Empty, dbUpdateException.InnerException.Message);
                 }
-                return RedirectToAction(nameof(Index));
+                catch (Exception exception)
+                {
+                    ModelState.AddModelError(string.Empty, exception.Message);
+                }
             }
-            return View(service);
-        }
-
-        // GET: Services/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
-        {
-            if (id == null || _context.Services == null)
-            {
-                return NotFound();
-            }
-
-            var service = await _context.Services
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (service == null)
-            {
-                return NotFound();
-            }
-
-            return View(service);
-        }
-
-        // POST: Services/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
-        {
-            if (_context.Services == null)
-            {
-                return Problem("Entity set 'DatabaseContext.Services'  is null.");
-            }
-            var service = await _context.Services.FindAsync(id);
-            if (service != null)
-            {
-                _context.Services.Remove(service);
-            }
-            
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool ServiceExists(Guid id)
-        {
-          return (_context.Services?.Any(e => e.Id == id)).GetValueOrDefault();
+            return View(vehicleDetail);
         }
     }
 }
