@@ -98,7 +98,7 @@ namespace Parcial3_CarmonaSantiago.Controllers
 
                     _context.Add(vehicleDetail);
                     await _context.SaveChangesAsync();
-                    return RedirectToAction(nameof(Index));
+                    return RedirectToAction(nameof(ServiceState));
                 }
                 catch (DbUpdateException dbUpdateException)
                 {
@@ -144,24 +144,10 @@ namespace Parcial3_CarmonaSantiago.Controllers
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
                 _context.Update(vehicleDetail);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(ProcessService));
-                }
-                catch (DbUpdateException dbUpdateException)
-                {
-                    ModelState.AddModelError(string.Empty, dbUpdateException.InnerException.Message);
-                }
-                catch (Exception exception)
-                {
-                    ModelState.AddModelError(string.Empty, exception.Message);
-                }
-            }
-            return View(vehicleDetail);
+
         }
 
         [HttpGet]
