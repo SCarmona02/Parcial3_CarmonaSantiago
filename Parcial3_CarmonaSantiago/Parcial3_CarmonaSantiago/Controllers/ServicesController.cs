@@ -119,6 +119,7 @@ namespace Parcial3_CarmonaSantiago.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> EditProcessService(Guid? vehicleDetailId)
         {
             Console.WriteLine(vehicleDetailId);
